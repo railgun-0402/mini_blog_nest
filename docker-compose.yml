@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: mini_matching_db
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mini_matching
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

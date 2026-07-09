@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  users     User[]
+  companies Company[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  passwordHash   String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  notes          Note[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model Company {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  description    String?
+  websiteUrl     String?
+  contacts       Contact[]
+  notes          Note[]
+  companyTags    CompanyTag[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([name])
+}
+
+model Contact {
+  id             String   @id @default(cuid())
+  organizationId String
+  companyId      String
+  company        Company  @relation(fields: [companyId], references: [id])
+  name           String
+  email          String?
+  position       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([companyId])
+}
+
+model Note {
+  id             String   @id @default(cuid())
+  organizationId String
+  companyId      String
+  userId         String
+  company        Company  @relation(fields: [companyId], references: [id])
+  user           User     @relation(fields: [userId], references: [id])
+  body           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([companyId])
+  @@index([userId])
+}
+
+model Tag {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  companyTags CompanyTag[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model CompanyTag {
+  companyId String
+  tagId     String
+  company   Company @relation(fields: [companyId], references: [id])
+  tag       Tag     @relation(fields: [tagId], references: [id])
+
+  @@id([companyId, tagId])
+}
