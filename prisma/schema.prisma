@@ -4,91 +4,92 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-model Organization {
-  id        String    @id @default(cuid())
+model Organizations {
+  id        String     @id @default(cuid())
   name      String
-  users     User[]
-  companies Company[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  users     Users[]
+  companies Companies[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
-model User {
-  id             String       @id @default(cuid())
-  email          String       @unique
+model Users {
+  id             String        @id @default(cuid())
+  email          String        @unique
   passwordHash   String
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  notes          Note[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  organization   Organizations @relation(fields: [organizationId], references: [id])
+  notes          Notes[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([organizationId])
 }
 
-model Company {
-  id             String       @id @default(cuid())
+model Companies {
+  id             String        @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organizations @relation(fields: [organizationId], references: [id])
   name           String
   description    String?
   websiteUrl     String?
-  contacts       Contact[]
-  notes          Note[]
-  companyTags    CompanyTag[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  contacts       Contacts[]
+  notes          Notes[]
+  companyTags    CompanyTags[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([organizationId])
   @@index([name])
 }
 
-model Contact {
-  id             String   @id @default(cuid())
+model Contacts {
+  id             String    @id @default(cuid())
   organizationId String
   companyId      String
-  company        Company  @relation(fields: [companyId], references: [id])
+  company        Companies @relation(fields: [companyId], references: [id])
   name           String
   email          String?
   position       String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([organizationId])
   @@index([companyId])
 }
 
-model Note {
-  id             String   @id @default(cuid())
+model Notes {
+  id             String    @id @default(cuid())
   organizationId String
   companyId      String
   userId         String
-  company        Company  @relation(fields: [companyId], references: [id])
-  user           User     @relation(fields: [userId], references: [id])
+  company        Companies @relation(fields: [companyId], references: [id])
+  user           Users     @relation(fields: [userId], references: [id])
   body           String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([organizationId])
   @@index([companyId])
   @@index([userId])
 }
 
-model Tag {
-  id          String       @id @default(cuid())
-  name        String       @unique
-  companyTags CompanyTag[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+model Tags {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  companyTags CompanyTags[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
-model CompanyTag {
+model CompanyTags {
   companyId String
   tagId     String
-  company   Company @relation(fields: [companyId], references: [id])
-  tag       Tag     @relation(fields: [tagId], references: [id])
+  company   Companies @relation(fields: [companyId], references: [id])
+  tag       Tags      @relation(fields: [tagId], references: [id])
 
   @@id([companyId, tagId])
 }
