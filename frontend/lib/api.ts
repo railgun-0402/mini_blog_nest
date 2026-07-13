@@ -48,7 +48,34 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(new URL(path, API_BASE_URL), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(body),
   });
   return handleResponse<T>(res);
+}
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  organization: { id: string; name: string };
+};
+
+export async function login(email: string, password: string) {
+  return apiPost<{ user: AuthUser }>('/auth/login', { email, password });
+}
+
+export async function register(
+  email: string,
+  password: string,
+  organizationName: string,
+) {
+  return apiPost<{ user: AuthUser }>('/auth/register', {
+    email,
+    password,
+    organizationName,
+  });
+}
+
+export async function logout() {
+  return apiPost<{ message: string }>('/auth/logout', {});
 }

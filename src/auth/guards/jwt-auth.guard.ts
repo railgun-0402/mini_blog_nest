@@ -23,11 +23,12 @@ export class JwtAuthGuard implements CanActivate {
     // request情報を取得
     const request = context.switchToHttp().getRequest<{
       headers: Record<string, string | undefined>;
+      cookies: Record<string, string | undefined>;
       user?: CurrentUser;
     }>();
 
-    // 2. Bearer tokenを取り出す
-    const token = this.extractTokenFromHeader(request.headers.authorization);
+    // 2. Bearer tokenをCookieから取り出す
+    const token = request.cookies?.access_token;
     if (!token) {
       throw new UnauthorizedException('認証が必要です');
     }
