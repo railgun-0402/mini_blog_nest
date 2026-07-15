@@ -23,6 +23,7 @@ model Users {
   organizationId String
   organization   Organizations @relation(fields: [organizationId], references: [id])
   notes          Notes[]
+  refreshTokens  RefreshTokens[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -92,4 +93,15 @@ model CompanyTags {
   tag       Tags      @relation(fields: [tagId], references: [id])
 
   @@id([companyId, tagId])
+}
+
+model RefreshTokens {
+  id        String   @id @default(cuid())
+  userId    String
+  user      Users    @relation(fields: [userId], references: [id])
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
