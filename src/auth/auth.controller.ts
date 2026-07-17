@@ -4,10 +4,12 @@ import {
   Get,
   HttpCode,
   Post,
+  Req,
   Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { CurrentUserDecorator } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
@@ -30,7 +32,13 @@ export class AuthController {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
-      maxAge: 1000 * 60 * 60,
+      maxAge: 1000 * 60 * 15,
+    });
+    response.cookie('refresh_token', result.refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     });
 
     return { user: result.user };
@@ -47,7 +55,13 @@ export class AuthController {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
-      maxAge: 1000 * 60 * 60,
+      maxAge: 1000 * 60 * 15,
+    });
+    response.cookie('refresh_token', result.refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     });
 
     return { user: result.user };
@@ -55,10 +69,40 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(200)
-  logout(@Res({ passthrough: true }) response: Response) {
-    // TODO: 後にリフレッシュトークンによるtoken無効化実装する
+  async logout(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const refreshToken = (request.cookies as Record<string, string>)
+      ?.refresh_token;
+    await this.authService.logout(refreshToken);
+
     response.clearCookie('access_token');
+    response.clearCookie('refresh_token');
     return { message: 'ログアウトしました' };
+  }
+
+  @Post('refresh')
+  @HttpCode(200)
+  async refresh(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const token = (request.cookies as Record<string, string>)?.refresh_token;
+    if (!token) {
+      throw new UnauthorizedException('リフレッシュトークンがありません');
+    }
+
+    const accessToken = await this.authService.refresh(token);
+
+    response.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 15,
+    });
+
+    return { message: 'トークンを更新しました' };
   }
 
   @UseGuards(JwtAuthGuard)
