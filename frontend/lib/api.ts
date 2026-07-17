@@ -1,5 +1,9 @@
+import { redirect } from 'next/navigation';
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
+
+const unauthorizedStatus: number = 401;
 
 export class ApiError extends Error {
   status: number;
@@ -40,18 +44,38 @@ export async function apiGet<T>(
       }
     }
   }
-  const res = await fetch(url, { cache: 'no-store' });
+  const res = await fetchWithRefresh(url, { cache: 'no-store' });
   return handleResponse<T>(res);
 }
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(new URL(path, API_BASE_URL), {
+  const res = await fetchWithRefresh(new URL(path, API_BASE_URL), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify(body),
   });
   return handleResponse<T>(res);
+}
+
+async function fetchWithRefresh(url: URL | string, init?: RequestInit) {
+  const res = await fetch(url, init);
+  if (res.status !== unauthorizedStatus)  return res; // 401以外はそのまま返却
+
+  const refreshRes = await fetch(new URL('/auth/refresh', API_BASE_URL), {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!refreshRes.ok) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    } else {
+      redirect('/login');
+    }
+  }
+
+  return fetch(url, init);
 }
 
 export type AuthUser = {
