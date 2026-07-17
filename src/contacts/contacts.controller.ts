@@ -1,15 +1,21 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUserDecorator } from '../auth/decorators/current-user.decorator';
+import type { CurrentUser } from '../auth/types/current-user.type';
 
-const TEMP_ORGANIZATION_ID = 'temp-organization-id';
-
+@UseGuards(JwtAuthGuard)
 @Controller('companies/:companyId/contacts')
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
 
   @Post()
-  create(@Param('companyId') companyId: string, @Body() dto: CreateContactDto) {
-    return this.contactsService.create(TEMP_ORGANIZATION_ID, companyId, dto);
+  create(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('companyId') companyId: string,
+    @Body() dto: CreateContactDto,
+  ) {
+    return this.contactsService.create(user.organizationId, companyId, dto);
   }
 }

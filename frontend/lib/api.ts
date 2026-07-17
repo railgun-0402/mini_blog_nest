@@ -44,7 +44,21 @@ export async function apiGet<T>(
       }
     }
   }
-  const res = await fetchWithRefresh(url, { cache: 'no-store' });
+
+  // next/headers はサーバサイドのみで動作
+  const { cookies } = await import('next/headers');
+  const cookieStore = await cookies();
+
+  const res = await fetchWithRefresh(url, {
+    cache: 'no-store',
+    headers: { cookie: cookieStore.toString() },
+  });
+
+  if (res.status === unauthorizedStatus) {
+    // Server側はリダイレクトのみ
+    redirect('/login');
+  }
+
   return handleResponse<T>(res);
 }
 
