@@ -45,17 +45,15 @@ export async function apiGet<T>(
     }
   }
 
-  // next/headers はサーバサイドのみで動作
   const { cookies } = await import('next/headers');
   const cookieStore = await cookies();
 
-  const res = await fetchWithRefresh(url, {
+  const res = await fetch(url, {
     cache: 'no-store',
-    headers: { cookie: cookieStore.toString() },
+    headers: { Cookie: cookieStore.toString() },
   });
 
   if (res.status === unauthorizedStatus) {
-    // Server側はリダイレクトのみ
     redirect('/login');
   }
 

@@ -4,11 +4,14 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('access_token');
   const { pathname } = request.nextUrl;
 
-  if (!token && pathname !== '/login') {
+  const publicPaths = ['/login', '/register'];
+  const isPublic = publicPaths.includes(pathname);
+
+  if (!token && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  if (token && pathname === '/login') {
+  if (token && isPublic) {
     return NextResponse.redirect(new URL('/companies', request.url));
   }
 
