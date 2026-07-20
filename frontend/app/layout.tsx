@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { TenantSwitcher } from "@/components/TenantSwitcher";
 import { LogoutButton } from "@/components/LogoutButton";
 import "./globals.css";
 
@@ -40,12 +39,7 @@ export default async function RootLayout({
             <Link href="/companies" className="text-lg font-semibold">
               営業支援ツール
             </Link>
-            {isLoggedIn && (
-              <div className="flex items-center gap-3">
-                <TenantSwitcher />
-                <LogoutButton />
-              </div>
-            )}
+            {isLoggedIn && <LogoutButton />}
           </div>
         </header>
         <main className="flex flex-1 flex-col">{children}</main>

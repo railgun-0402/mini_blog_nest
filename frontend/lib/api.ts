@@ -44,7 +44,19 @@ export async function apiGet<T>(
       }
     }
   }
-  const res = await fetchWithRefresh(url, { cache: 'no-store' });
+
+  const { cookies } = await import('next/headers');
+  const cookieStore = await cookies();
+
+  const res = await fetch(url, {
+    cache: 'no-store',
+    headers: { Cookie: cookieStore.toString() },
+  });
+
+  if (res.status === unauthorizedStatus) {
+    redirect('/login');
+  }
+
   return handleResponse<T>(res);
 }
 

@@ -7,40 +7,53 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { SearchCompaniesDto } from './dto/search-companies.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUserDecorator } from '../auth/decorators/current-user.decorator';
+import type { CurrentUser } from '../auth/types/current-user.type';
 
-const TEMP_ORGANIZATION_ID = 'temp-organization-id';
-
+@UseGuards(JwtAuthGuard)
 @Controller('companies')
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Get()
-  findAll(@Query() query: SearchCompaniesDto) {
-    return this.companiesService.findAll(TEMP_ORGANIZATION_ID, query);
+  findAll(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Query() query: SearchCompaniesDto,
+  ) {
+    return this.companiesService.findAll(user.organizationId, query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.companiesService.findOne(TEMP_ORGANIZATION_ID, id);
+  findOne(@CurrentUserDecorator() user: CurrentUser, @Param('id') id: string) {
+    return this.companiesService.findOne(user.organizationId, id);
   }
 
   @Post()
-  create(@Body() dto: CreateCompanyDto) {
-    return this.companiesService.create(TEMP_ORGANIZATION_ID, dto);
+  create(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Body() dto: CreateCompanyDto,
+  ) {
+    return this.companiesService.create(user.organizationId, dto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateCompanyDto) {
-    return this.companiesService.update(TEMP_ORGANIZATION_ID, id, dto);
+  update(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateCompanyDto,
+  ) {
+    return this.companiesService.update(user.organizationId, id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.companiesService.remove(TEMP_ORGANIZATION_ID, id);
+  remove(@CurrentUserDecorator() user: CurrentUser, @Param('id') id: string) {
+    return this.companiesService.remove(user.organizationId, id);
   }
 }
