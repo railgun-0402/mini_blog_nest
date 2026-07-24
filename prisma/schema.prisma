@@ -40,11 +40,33 @@ model Companies {
   contacts       Contacts[]
   notes          Notes[]
   companyTags    CompanyTags[]
+  analyses       CompanyAnalyses[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@index([organizationId])
   @@index([name])
+}
+
+model CompanyAnalyses {
+  id                 String          @id @default(cuid())
+  companyId          String
+  company            Companies       @relation(fields: [companyId], references: [id])
+  overview           String?         // 企業の概要
+  businessChallenges String?         // 事業の課題
+  managementPolicy   String?         // 中長期の経営方針
+  status             AnalysisStatus  @default(PENDING)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([companyId])
+}
+
+enum AnalysisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 model Contacts {
