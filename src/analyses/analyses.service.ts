@@ -2,6 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { tavily } from '@tavily/core';
@@ -15,6 +16,8 @@ export type AnalysisResult = {
 
 @Injectable()
 export class AnalysesService {
+  private readonly logger: Logger = new Logger(AnalysesService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async analyze(companyId: string, keywords: string) {
@@ -49,7 +52,10 @@ export class AnalysesService {
           ...result,
         },
       });
-    } catch {
+    } catch (e) {
+      const errMessage = e instanceof Error ? e.message : String(e);
+      this.logger.error('解析失敗：', errMessage);
+
       await this.prisma.companyAnalyses.update({
         where: {
           id: analysis.id,
@@ -75,7 +81,7 @@ export class AnalysesService {
   private async generateAnalysis(companyName: string, searchContent: string) {
     // WebAPIの検索結果をGeminiに渡して解析
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '');
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
     const prompt = `
     以下の情報をもとに企業分析を行い、JSON形式で返してください。
