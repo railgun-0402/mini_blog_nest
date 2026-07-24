@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { tavily } from '@tavily/core';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -31,13 +35,44 @@ export class AnalysesService {
       throw new NotFoundException('企業が見つかりません');
     }
 
-    // Tavilyにて企業情報をWeb検索APIを実行
-    const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY });
-    const searchResult = await tavilyClient.search(
-      `${company.name} ${keywords}`,
-      { includeAnswer: true },
-    );
+    try {
+      const searchResult = await this.searchWeb(company.name, keywords);
+      // ex: { overview, businessChallenges, managementPolicy }
+      const result = await this.generateAnalysis(company.name, searchResult);
 
+      return this.prisma.companyAnalyses.update({
+        where: {
+          id: analysis.id,
+        },
+        data: {
+          status: 'COMPLETED',
+          ...result,
+        },
+      });
+    } catch {
+      await this.prisma.companyAnalyses.update({
+        where: {
+          id: analysis.id,
+        },
+        data: {
+          status: 'FAILED',
+        },
+      });
+      throw new InternalServerErrorException('解析に失敗しました');
+    }
+  }
+
+  // Tavilyで検索し、結果を返す
+  private async searchWeb(companyName: string, keywords: string) {
+    const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY });
+    const result = await tavilyClient.search(`${companyName} ${keywords}`, {
+      includeAnswer: true,
+    });
+    return result.results.map((r) => r.content).join('\n');
+  }
+
+  // Geminiに渡して3項目を生成する
+  private async generateAnalysis(companyName: string, searchContent: string) {
     // WebAPIの検索結果をGeminiに渡して解析
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '');
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -45,8 +80,8 @@ export class AnalysesService {
     const prompt = `
     以下の情報をもとに企業分析を行い、JSON形式で返してください。
   
-    企業名: ${company.name}
-    収集情報: ${searchResult.results.map((r) => r.content).join('\n')}
+    企業名: ${companyName}
+    収集情報: ${searchContent}
   
     出力形式:
     {
@@ -64,20 +99,6 @@ export class AnalysesService {
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
-
-    // ex: { overview, businessChallenges, managementPolicy }
-    const parsed = JSON.parse(text) as AnalysisResult;
-
-    return this.prisma.companyAnalyses.update({
-      where: {
-        id: analysis.id,
-      },
-      data: {
-        status: 'COMPLETED',
-        overview: parsed.overview,
-        businessChallenges: parsed.businessChallenges,
-        managementPolicy: parsed.managementPolicy,
-      },
-    });
+    return JSON.parse(text) as AnalysisResult;
   }
 }
